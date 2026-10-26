@@ -1,0 +1,8 @@
+{
+  "name": "soundwave-doppler-demo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A buildless, GitHub Pages-ready SoundWave-inspired gesture experiment.",
+  "scripts": { "test": "node --test tests/*.test.mjs" }
+}
