@@ -56,6 +56,7 @@ export class DopplerDetector {
     this.awayShift = 0;
     this.velocityTowardShift = null;
     this.velocityAwayShift = null;
+    this.noiseRejected = false;
     this.direction = 'still';
     this.candidate = 'still';
     this.candidateSince = 0;
@@ -80,6 +81,7 @@ export class DopplerDetector {
     this.lastTimestamp = now;
     if (this.startedAt === null) this.startedAt = now;
     const elapsed = now - this.startedAt;
+    this.noiseRejected = false;
 
     // A clear pilot at the expected frequency is required. A broad noise burst
     // has no such isolated peak and must not be labeled as a hand gesture.
@@ -140,6 +142,38 @@ export class DopplerDetector {
       side.energy += excess;
       if (excess > side.peak) { side.peak = excess; side.peakBin = i; }
     }
+
+    // A colored noise hump can be localized relative to the whole 700 Hz side
+    // yet not be a distinct reflection. Compare every candidate with its current
+    // neighboring frequencies, not only the stationary calibration baseline.
+    const isolatePeak = (side, sign) => {
+      const originalPeak = side.peak;
+      side.peak = 0; side.peakBin = 0;
+      for (let i = this.lowerBin; i <= this.upperBin; i++) {
+        const offset = i * this.binHz - this.carrierHz;
+        const value = this.excess[i];
+        if (Math.sign(offset) !== sign || value <= 0 || value < this.excess[i - 1] || value < this.excess[i + 1]) continue;
+        // Do not treat a monotone noise tail cut by the carrier guard as a peak.
+        if (powerAt(dbData, i) < powerAt(dbData, i - 1) || powerAt(dbData, i) < powerAt(dbData, i + 1)) continue;
+        const neighbors = [];
+        for (let j = Math.max(this.lowerBin, i - 12); j <= Math.min(this.upperBin, i + 12); j++) {
+          const neighborOffset = j * this.binHz - this.carrierHz;
+          if (Math.abs(j - i) <= 3 || Math.abs(neighborOffset) < this.guardHz || Math.sign(neighborOffset) !== sign) continue;
+          neighbors.push(powerAt(dbData, j));
+        }
+        if (neighbors.length < 4) continue;
+        neighbors.sort((a, b) => a - b);
+        const localFloor = Math.max(floorPower, neighbors[Math.floor(neighbors.length / 2)]);
+        const prominence = powerAt(dbData, i) / localFloor;
+        // Roughly 6 dB above the instantaneous local background. Both signs
+        // use exactly the same neighborhood and threshold; no time debounce.
+        if (prominence < 4 / Math.sqrt(this.sensitivity)) continue;
+        if (value > side.peak) { side.peak = value; side.peakBin = i; }
+      }
+      if (originalPeak > carrierPower * .00002 && !side.peak) this.noiseRejected = true;
+    };
+    isolatePeak(toward, 1);
+    isolatePeak(away, -1);
 
     const measure = side => {
       const threshold = Math.max(
@@ -249,7 +283,7 @@ export class DopplerDetector {
       towardEnergy: clamp(towardEnergy),
       awayEnergy: clamp(awayEnergy),
       activity: clamp(Math.max(towardEnergy, awayEnergy)),
-      carrierDb, signalPresent,
+      carrierDb, signalPresent, noiseRejected: this.noiseRejected,
       lowerHz: this.lowerHz,
       upperHz: this.upperHz,
       noiseDb, carrierSNR,

@@ -1,6 +1,6 @@
-import { DopplerDetector } from './doppler.js?v=continuous-2';
+import { DopplerDetector } from './doppler.js?v=noise-3';
 import { SoundWaveAudio } from './audio-engine.js';
-import { LiveMonitor } from './live-monitor.js';
+import { LiveMonitor } from './live-monitor.js?v=compact-3';
 import { FrequencySurvey } from './frequency-survey.js';
 import { estimateVelocity, velocityText } from './velocity.js?v=continuous-2';
 import { SignalHistory, drawGestureHistory } from './signal-history.js?v=continuous-2';
@@ -102,6 +102,7 @@ function makeDetector() {
 }
 
 function updateMode() {
+  document.body.dataset.mode = mode;
   monitor.setMode(mode);
   monitor.output(mode === 'real' && audio.active, carrierHz, Number(ui.gain.value) / 100);
   const isReal = mode === 'real';
@@ -590,3 +591,6 @@ new ResizeObserver(resizeCanvas).observe(canvas);
 makeDetector();
 updateChartView();
 frameId = requestAnimationFrame(frame);
+
+$('open-diagnostics').addEventListener('click', () => $('diagnostics-dialog').showModal());
+$('close-diagnostics').addEventListener('click', () => $('diagnostics-dialog').close());

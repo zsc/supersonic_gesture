@@ -28,7 +28,7 @@
   <a class="skip-link" href="#lab">跳到实验台</a>
   <header class="header wrap">
     <a class="brand" href="#" aria-label="SoundWave 首页"><span class="brand-icon"><svg><use href="#i-wave"/></svg></span><span>SoundWave<span class="brand-dot">.</span></span><span class="brand-label">EXPERIMENTS</span></a>
-    <nav aria-label="主导航"><a class="nav-active" href="#lab">实验台</a><a href="#guide">使用指南</a><a href="#method">背后原理 <svg><use href="#i-external"/></svg></a></nav>
+    <button id="open-diagnostics" type="button" class="details-button">详情 / 说明</button>
     <span class="header-tag"><span></span> Browser edition</span>
   </header>
 
@@ -56,25 +56,17 @@
       <div id="notice" class="notice" role="status" hidden></div>
 
       <section class="live-monitor" aria-labelledby="monitor-heading">
-        <div class="monitor-heading">
-          <div><h3 id="monitor-heading">实时监测</h3></div>
-          <span id="monitor-source" class="monitor-source">模拟数据 · 未使用麦克风</span>
-        </div>
-        <div class="monitor-verdict" id="monitor-verdict" data-state="idle">
-          <span class="monitor-light" aria-hidden="true"></span>
-          <div><strong id="monitor-status" role="status">正在准备分析</strong><p id="monitor-help">等待第一帧数据…</p></div>
-        </div>
+        <div class="monitor-heading"><h3 id="monitor-heading">实时监测</h3><span id="monitor-source" class="monitor-source">模拟数据</span></div>
+        <div class="monitor-verdict" id="monitor-verdict" data-state="idle"><span class="monitor-light" aria-hidden="true"></span><strong id="monitor-status" role="status">准备分析</strong></div>
         <div class="monitor-cards">
-          <div><span>高频发射</span><strong id="monitor-output">未发声</strong><small id="monitor-output-detail">模拟模式不启用扬声器</small></div>
-          <div><span>麦克风输入</span><strong id="monitor-input">未使用</strong><div class="input-level" aria-hidden="true"><i id="monitor-level"></i></div><small id="monitor-device">模拟模式不采集声音</small><small id="monitor-processing">AEC / 降噪 / 自动增益：未启用采集</small></div>
-          <div><span>高频载波</span><strong id="monitor-carrier">等待数据</strong><small id="monitor-carrier-detail">检查声音能否到达麦克风</small></div>
-          <div><span>背景校准</span><strong id="monitor-calibration">准备中</strong><progress id="monitor-progress" max="100" value="0" aria-label="背景校准进度"></progress></div>
-          <div><span>数据更新</span><strong id="monitor-rate">等待数据</strong><small id="monitor-frames">已分析 0 帧</small><small id="monitor-age">尚未收到数据</small></div>
+          <div><span>发射</span><strong id="monitor-output">未发声</strong></div>
+          <div><span>输入</span><strong id="monitor-input">未使用</strong><div class="input-level" aria-hidden="true"><i id="monitor-level"></i></div></div>
+          <div><span>载频</span><strong id="monitor-carrier">—</strong><small id="monitor-carrier-detail">等待数据</small></div>
+          <div><span>校准</span><strong id="monitor-calibration">准备中</strong><progress id="monitor-progress" max="100" value="0" aria-label="背景校准进度"></progress></div>
+          <div><span>更新</span><strong id="monitor-rate">等待数据</strong></div>
+          <div><span>谱峰筛选</span><strong id="monitor-interference">等待数据</strong></div>
         </div>
-        <div class="monitor-bottom">
-          <div class="monitor-wave"><div><span>麦克风原始波形</span><small id="monitor-wave-scale">无麦克风输入</small></div><canvas id="monitor-waveform" role="img" aria-label="麦克风实时波形，输入电平同时以文字显示"></canvas><p id="monitor-wave-note">模拟模式下不生成虚假的麦克风波形。</p></div>
-          <div class="monitor-events"><div><span>最近识别</span><small>本次校准后 · 最多 4 条</small></div><ol id="monitor-history"><li>等待校准后移动手掌</li></ol></div>
-        </div>
+        <small id="monitor-processing">AEC / NS / AGC：未采集</small>
       </section>
 
       <div class="instrument-grid">
@@ -83,7 +75,7 @@
           <div class="mel-options" id="mel-options">
             <label>频段 <select id="mel-range"><option value="ultrasonic">载频 ±700 Hz</option><option value="full">全频段 Mel</option></select></label>
             <span class="raw-signal-note">固定显示 · 无自动归一化</span>
-            <label class="mel-adjust">显示增益 <input id="mel-display-gain" type="range" min="-20" max="20" step="2" value="0"><output id="mel-gain-value">+0 dB</output></label>
+            <label class="mel-adjust">亮度 <input id="mel-display-gain" type="range" min="-20" max="20" step="2" value="0"><output id="mel-gain-value">+0 dB</output></label>
             <small class="raw-signal-note">仅调显示亮度，不改变采集与检测</small>
           </div>
           <div class="plot-meta" id="plot-meta" hidden><span><i class="legend-dot away"></i>远离 · 负频移</span><span class="carrier-label">载频 <b id="carrier-chart">16.00 kHz</b></span><span><i class="legend-dot toward"></i>靠近 · 正频移</span></div>
@@ -91,12 +83,12 @@
           <div class="plot-wrap"><canvas id="spectrum" aria-label="载频附近正负 700 Hz 范围的频谱图，方向和读数也以文字显示" role="img"></canvas><span id="plot-label" class="plot-label">SIMULATED SIGNAL</span></div>
           <div class="subfigure-caption" id="gesture-heading">b · 速度历史 <span>靠近为正 · 远离为负</span></div>
           <div class="gesture-history-wrap"><canvas id="gesture-history-chart" role="img" aria-label="与上方 Mel 同步的最近十秒等效径向速度曲线，单位米每秒。正值靠近，负值远离，双向显示两条分支。速度由有效侧带独立估计，无有效侧带时留空，不表示零速度。下沿为单独的手势分类状态"></canvas></div>
-          <p class="velocity-note">↑ 靠近 · ↓ 远离 · ↕ 双向 · · 未确认 · × 无载频 · ◌ 校准<br>速度独立于手势判定；无有效侧带留空。等效径向估计，非标定手速。</p>
+          <p class="velocity-note" title="速度独立于手势判定；无有效侧带留空。等效径向速度不是标定手速。">↑ 靠近 · ↓ 远离 · ↕ 双向 · · 未确认 · × 无载频 · ◌ 校准<br>速度独立于手势判定；无有效侧带留空。等效径向估计，非标定手速。</p>
           <div class="metrics">
-            <div><p>等效径向速度</p><div class="metric-value velocity-metric"><span id="velocity-value">—</span><small>m/s</small></div></div>
-            <div><p>反射频移 <span>Δf</span></p><div class="metric-value"><span id="shift-value">—</span><small>Hz</small></div></div>
-            <div><p>方向判定 <span>HEURISTIC</span></p><div class="metric-value"><span id="confidence-value">—</span><small>信号评分</small></div></div>
-            <div><p>载频强度 <span>PILOT</span></p><div class="metric-value"><span id="pilot-value">—</span><small>dBFS</small></div></div>
+            <div><p>等效速度</p><div class="metric-value velocity-metric"><span id="velocity-value">—</span><small>m/s</small></div></div>
+            <div><p>频移 <span>Δf</span></p><div class="metric-value"><span id="shift-value">—</span><small>Hz</small></div></div>
+            <div><p>评分 <span>HEURISTIC</span></p><div class="metric-value"><span id="confidence-value">—</span><small>信号评分</small></div></div>
+            <div><p>载频 <span>PILOT</span></p><div class="metric-value"><span id="pilot-value">—</span><small>dBFS</small></div></div>
           </div>
           <div class="signal-status"><span class="status-dot" id="signal-dot"></span><span id="signal-status">正在建立模拟基线…</span><span class="sample-meta" id="sample-meta">48 kHz · FFT 8192</span></div>
         </div>
@@ -122,14 +114,23 @@
           <div class="setting"><label for="gain">发射增益 <output id="gain-output">8 <span>%</span></output></label><input id="gain" type="range" min="1" max="25" step="1" value="8"><div class="range-labels"><span>低强度开始</span><span>数字增益，非声压</span></div></div>
           <div class="setting"><label for="sensitivity">检测灵敏度 <output id="sensitivity-output">1.0 <span>×</span></output></label><input id="sensitivity" type="range" min="0.5" max="2" step="0.1" value="1"><div class="range-labels"><span>更稳定</span><span>更敏感</span></div></div>
         </div>
-        <details class="frequency-survey" open><summary>频点对照 · 真实采集<span>＋</span></summary>
-          <p>保持手、设备和系统音量不变。每次调整频率或增益后独立统计，排除校准阶段；至少观察 3 秒；每段最多保留 600 个读数，最近 12 段。数值为本机声学链路读数，非声压级。</p>
-          <div class="survey-scroll"><table><thead><tr><th>频率 / 增益</th><th>时长</th><th>载频 dBFS</th><th>背景 dBFS</th><th>SNR dB</th><th>波动 IQR</th><th>检出率</th></tr></thead><tbody id="frequency-survey-body"><tr><td colspan="7">开启真实检测后记录</td></tr></tbody></table></div>
-        </details>
         <p class="sound-note"><svg><use href="#i-volume"/></svg>使用设备扬声器，并从较低音量开始。高频声对部分人仍可听见；如有不适，请停止。调整频率或增益后会自动重新校准。</p>
       </div>
     </section>
 
+  </main>
+
+  <dialog id="diagnostics-dialog" aria-labelledby="diagnostics-title">
+    <div class="dialog-heading"><h2 id="diagnostics-title">设备与实验详情</h2><button id="close-diagnostics" type="button">关闭</button></div>
+    <p id="monitor-help">等待第一帧数据</p>
+    <p id="monitor-device">麦克风尚未提供输入</p>
+    <p id="monitor-output-detail">未发声</p>
+    <p><span id="monitor-frames">已分析 0 帧</span> · <span id="monitor-age">尚未收到数据</span></p>
+    <div class="monitor-events"><span>最近识别</span><ol id="monitor-history"><li>等待校准后移动手掌</li></ol></div>
+        <details class="frequency-survey" open><summary>频点对照 · 真实采集<span>＋</span></summary>
+          <p>保持手、设备和系统音量不变。每次调整频率或增益后独立统计，排除校准阶段；至少观察 3 秒；每段最多保留 600 个读数，最近 12 段。数值为本机声学链路读数，非声压级。</p>
+          <div class="survey-scroll"><table><thead><tr><th>频率 / 增益</th><th>时长</th><th>载频 dBFS</th><th>背景 dBFS</th><th>SNR dB</th><th>波动 IQR</th><th>检出率</th></tr></thead><tbody id="frequency-survey-body"><tr><td colspan="7">开启真实检测后记录</td></tr></tbody></table></div>
+        </details>
     <details id="guide" class="help-section"><summary>使用指南<span aria-hidden="true">＋</span></summary>
     <section class="guide" aria-labelledby="guide-title">
       <div class="section-title"><div><p class="eyebrow">GET STARTED</p><h2 id="guide-title">三步，试试隔空交互。</h2></div><span class="subtle-tag">推荐先用模拟体验熟悉信号</span></div>
@@ -147,9 +148,8 @@
       <div class="method-details"><div class="formula"><span>靠近</span><b>Δf &gt; 0</b><i>↗</i><span>远离</span><b>Δf &lt; 0</b><i>↙</i></div><p>扬声器发出单音，麦克风采集反射声。通过频谱分析、静态背景扣除和时间平滑，估计靠近、远离或双向变化。</p><details><summary>它能做到什么？有哪些边界？<span>+</span></summary><p>这是 SoundWave 原理的教育性浏览器改编，使用侧带能量判定，并非原始 Mathematica 程序或论文算法的逐行复现。单组扬声器与麦克风不能测出精确位置，也无法证明反射来自手掌。双向信号只代表两侧频谱同时变化，不等于识别了特定双手动作。评分是启发式信号质量，不是识别准确率。</p></details><details><summary>没有检测到手势怎么办？<span>+</span></summary><p>先确认系统没有静音、输出为扬声器、输入为内置麦克风。保持设备静止，尝试将频率降到 18–19 kHz 并重新校准。浏览器或硬件可能过滤高频，或无法关闭语音降噪；此时换一台设备或继续使用模拟模式。建议在独立 HTTPS 页面中打开，嵌入预览可能限制麦克风权限。真实识别效果取决于设备和环境。</p></details><details><summary>声音和麦克风数据会被保存吗？<span>+</span></summary><p>不会。网页不录音、不上传音频，也不请求摄像头权限。所有频谱分析在当前设备内完成。点击停止、切换到模拟模式或将页面切到后台时，发声与麦克风采集都会停止。模拟模式仅生成频谱数据，不发声、不访问麦克风。</p></details></div>
     </section>
     </details>
-  </main>
-
-  <footer class="footer wrap"><div class="footer-brand"><svg><use href="#i-wave"/></svg><span>SoundWave<span> / </span><small>A browser experiment</small></span></div><p>Inspired by Gupta et al. · CHI 2012</p><a href="./README.md"><svg><use href="#i-download"/></svg>GitHub Pages 部署说明</a></footer>
+    <p><a href="./README.md" target="_blank" rel="noopener noreferrer">实验说明与验证记录</a></p>
+  </dialog>
   <div class="sr-only" id="announcement" role="status" aria-live="polite"></div>
   <noscript><p class="noscript">这个实验需要启用 JavaScript。请允许脚本后刷新页面。</p></noscript>
 </body>
