@@ -14,7 +14,7 @@ export function describeSignal(mode, result, input) {
   if (input.rmsDb < -85) return ['warning', '输入电平很低', '检查麦克风是否被静音、输入设备是否正确；输入电平可帮助确认声音输入。'];
   if (!result.signalPresent) return ['warning', '有声音输入，但未检测到有效载频', '确认声音从扬声器播放；尝试将发射频率降至 18–19 kHz，然后重新校准。'];
   if (input.peak >= .99) return ['warning', '输入接近削波', '请降低系统麦克风输入增益或扬声器音量，然后重新校准。'];
-  if (result.noiseRejected && result.direction === 'still') return ['warning', '非孤立谱峰已拒绝', '发现较宽或低突出度的频谱变化，已从检测中剔除；原始 Mel 仍保留这些信号。'];
+  if (result.noiseRejected && result.direction === 'still') return ['warning', '可疑谱峰已过滤', '宽带、低突出度或不连续的谱峰候选已暂缓；原始 Mel 仍显示输入信号。'];
   if (result.direction !== 'still') return ['ok', `检测到${directions[result.direction] || '运动'}`, '麦克风、载频与方向分析均有反馈；观察频移和最近识别记录。'];
   return ['ok', '采集正常 · 载频已检测', '尚无明确运动。请在扬声器与麦克风附近将手掌推近、拉远。'];
 }
@@ -113,7 +113,7 @@ export class LiveMonitor {
     this.text('rate', this.lastSample !== null ? this.rate ? `${Math.round(this.rate)} 帧/秒` : '正在接收' : '等待数据');
     this.text('frames', `已分析 ${this.frames.toLocaleString('zh-CN')} 帧`);
     this.text('age', this.lastSample === null ? '尚未收到数据' : `最近更新 ${Math.max(0, Math.round(now - this.lastSample))} ms 前`);
-    this.text('interference', result && !result.calibrating ? result.noiseRejected ? '已拒绝干扰' : '正常' : '等待数据');
+    this.text('interference', result && !result.calibrating ? result.noiseRejected ? '候选已过滤' : '正常' : '等待数据');
   }
 
   checkFreshness() {

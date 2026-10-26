@@ -57,6 +57,7 @@ export class DopplerDetector {
     this.velocityTowardShift = null;
     this.velocityAwayShift = null;
     this.noiseRejected = false;
+    this.velocityCandidates = { toward: null, away: null };
     this.direction = 'still';
     this.candidate = 'still';
     this.candidateSince = 0;
@@ -117,6 +118,7 @@ export class DopplerDetector {
     if (!signalPresent) {
       this.smoothToward = this.smoothAway = 0;
       this.velocityTowardShift = this.velocityAwayShift = null;
+      this.velocityCandidates = { toward: null, away: null };
       this.direction = this.candidate = 'still';
       this.candidateSince = now;
       return this.result({ carrierDb, noiseDb, carrierSNR, signalPresent, elapsed });
@@ -211,12 +213,27 @@ export class DopplerDetector {
     toward = measure(toward);
     away = measure(away);
     const velocityAlpha = 1 - Math.exp(-dt / 45);
-    const updateVelocity = (previous, measurement) => !measurement.velocityValid ? null :
-      previous === null || dt >= 150 ? measurement.shift : previous + velocityAlpha * (measurement.shift - previous);
-    // A lost side is cleared immediately. Reacquisition starts at the new
-    // measurement instead of mixing in the previous half-cycle's last speed.
-    this.velocityTowardShift = updateVelocity(this.velocityTowardShift, toward);
-    this.velocityAwayShift = updateVelocity(this.velocityAwayShift, away);
+    const updateVelocity = (previous, measurement, side) => {
+      const candidate = this.velocityCandidates[side];
+      if (!measurement.velocityValid) {
+        this.velocityCandidates[side] = null;
+        measurement.ratio = 0;
+        return null;
+      }
+      this.velocityCandidates[side] = { shift: measurement.shift, time: now };
+      // Reject isolated/jumping peaks, using the same two-observation rule on
+      // both signs. This is independent of the 140 ms gesture-label debounce.
+      const age = candidate ? now - candidate.time : Infinity;
+      const coherent = age > 0 && age <= 150 && Math.abs(measurement.shift - candidate.shift) <= Math.max(this.binHz * 4, age * 1.8);
+      if (!coherent) {
+        measurement.ratio = 0;
+        this.noiseRejected = true;
+        return null;
+      }
+      return previous === null || dt >= 150 ? measurement.shift : previous + velocityAlpha * (measurement.shift - previous);
+    };
+    this.velocityTowardShift = updateVelocity(this.velocityTowardShift, toward, 'toward');
+    this.velocityAwayShift = updateVelocity(this.velocityAwayShift, away, 'away');
     const alpha = 1 - Math.exp(-dt / 70);
     this.smoothToward += alpha * (toward.ratio - this.smoothToward);
     this.smoothAway += alpha * (away.ratio - this.smoothAway);

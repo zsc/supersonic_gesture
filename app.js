@@ -1,6 +1,6 @@
-import { DopplerDetector } from './doppler.js?v=noise-3';
+import { DopplerDetector } from './doppler.js?v=noise-4';
 import { SoundWaveAudio } from './audio-engine.js';
-import { LiveMonitor } from './live-monitor.js?v=compact-3';
+import { LiveMonitor } from './live-monitor.js?v=compact-4';
 import { FrequencySurvey } from './frequency-survey.js';
 import { estimateVelocity, velocityText } from './velocity.js?v=continuous-2';
 import { SignalHistory, drawGestureHistory } from './signal-history.js?v=continuous-2';

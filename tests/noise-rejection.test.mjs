@@ -38,3 +38,16 @@ test('an isolated reflection survives a broad pedestal and opposing-side interfe
     }
   }
 });
+
+
+test('isolated narrow peaks jumping across frequency bins do not form a velocity track', () => {
+  for (const sign of [-1, 1]) {
+    const detector = calibratedNoiseDetector(DopplerDetector);
+    const offsets = [100, 400, 150, 600, 250, 500];
+    for (let i = 0; i < 24; i++) {
+      const result = detector.process(noisySpectrum({ reflectionHz: sign * offsets[i % offsets.length] }), 2240 + i * 40);
+      assert.deepEqual(estimateVelocity(result), { toward: null, away: null });
+      assert.equal(result.direction, 'still');
+    }
+  }
+});

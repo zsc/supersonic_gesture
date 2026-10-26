@@ -26,6 +26,8 @@ test('lost peaks are immediately unknown and reacquisition does not reuse old ha
   result = detector.process(spectrum(), now += 40);
   assert.deepEqual(estimateVelocity(result), { toward: null, away: null });
   result = detector.process(spectrum(3), now += 40);
+  assert.deepEqual(estimateVelocity(result), { toward: null, away: null });
+  result = detector.process(spectrum(3), now += 40);
   assert.ok(Math.abs(estimateVelocity(result).toward - 3) < .08);
   detector.resetCalibration();
   result = detector.process(spectrum(3), now += 40);
